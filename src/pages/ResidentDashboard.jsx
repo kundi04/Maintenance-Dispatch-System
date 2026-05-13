@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
-import { getCookie } from '../utils/csrf'
+import { getCsrfToken } from '../utils/csrf'
 
 function ResidentDashboard() {
   const [requests, setRequests] = useState([])
@@ -12,7 +12,10 @@ function ResidentDashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchRequests()
+    (async () => {
+      if (!getCsrfToken()) await api.get('/auth/csrf/')
+      fetchRequests()
+    })()
   }, [])
 
   const fetchRequests = async () => {
@@ -32,9 +35,7 @@ function ResidentDashboard() {
     setSubmitting(true)
 
     try {
-      await api.post('/requests/', form, {
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
-      })
+      await api.post('/requests/', form)
       setMessage({ type: 'success', text: 'Request submitted successfully!' })
       setForm({ title: '', description: '' })
       fetchRequests()
@@ -46,9 +47,7 @@ function ResidentDashboard() {
   }
 
   const handleLogout = async () => {
-    await api.post('/auth/logout/', {}, {
-      headers: { 'X-CSRFToken': getCookie('csrftoken') }
-    })
+    await api.post('/auth/logout/', {})
     navigate('/login')
   }
 

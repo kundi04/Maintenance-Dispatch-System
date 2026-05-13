@@ -1,3 +1,5 @@
+const STORAGE_KEY = 'dispatch_csrf_token'
+
 export function getCookie(name) {
   let cookieValue = null
 
@@ -14,4 +16,32 @@ export function getCookie(name) {
   }
 
   return cookieValue
+}
+
+/** Cross-site (Vercel → Render): csrftoken cookie is not visible on document.cookie; use sessionStorage. */
+export function getCsrfToken() {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY)
+    if (stored) return stored
+  } catch {
+    /* ignore */
+  }
+  return getCookie('csrftoken')
+}
+
+export function setCsrfToken(token) {
+  if (!token) return
+  try {
+    sessionStorage.setItem(STORAGE_KEY, token)
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearCsrfToken() {
+  try {
+    sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    /* ignore */
+  }
 }

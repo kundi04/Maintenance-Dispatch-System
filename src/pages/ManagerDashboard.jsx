@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
-import { getCookie } from '../utils/csrf'
+import { getCsrfToken } from '../utils/csrf'
 import { FiUserPlus, FiEdit2, FiTrash2, FiX, FiCheck, FiClock, FiTool } from 'react-icons/fi'
 
 const STATUS_OPTIONS = [
@@ -21,8 +21,11 @@ function ManagerDashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchRequests()
-    fetchStaffUsers()
+    (async () => {
+      if (!getCsrfToken()) await api.get('/auth/csrf/')
+      fetchRequests()
+      fetchStaffUsers()
+    })()
   }, [])
 
   const fetchRequests = async () => {
@@ -59,10 +62,8 @@ function ManagerDashboard() {
     if (!modal.request) return
     setUpdating(modal.request.id)
     try {
-      await api.patch(`/requests/${modal.request.id}/`, { 
-        assigned_to: selectedStaff || null 
-      }, {
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+      await api.patch(`/requests/${modal.request.id}/`, {
+        assigned_to: selectedStaff || null
       })
       fetchRequests()
       closeModal()
@@ -76,9 +77,7 @@ function ManagerDashboard() {
   const handleStatusChange = async (id, newStatus) => {
     setUpdating(id)
     try {
-      await api.patch(`/requests/${id}/`, { status: newStatus }, {
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
-      })
+      await api.patch(`/requests/${id}/`, { status: newStatus })
       fetchRequests()
     } catch {
       alert('Failed to update status.')
@@ -90,9 +89,7 @@ function ManagerDashboard() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this request?')) return
     try {
-      await api.delete(`/requests/${id}/`, {
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
-      })
+      await api.delete(`/requests/${id}/`)
       fetchRequests()
     } catch {
       alert('Failed to delete request.')
@@ -100,9 +97,7 @@ function ManagerDashboard() {
   }
 
   const handleLogout = async () => {
-    await api.post('/auth/logout/', {}, {
-      headers: { 'X-CSRFToken': getCookie('csrftoken') }
-    })
+    await api.post('/auth/logout/', {})
     navigate('/login')
   }
 
