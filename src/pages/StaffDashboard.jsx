@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
-import { getCookie } from '../utils/csrf'
+import { getCsrfToken } from '../utils/csrf'
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', icon: '⏳', bg: '#fef3c7', color: '#92400e' },
@@ -16,7 +16,10 @@ function StaffDashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchRequests()
+    (async () => {
+      if (!getCsrfToken()) await api.get('/auth/csrf/')
+      fetchRequests()
+    })()
   }, [])
 
   const fetchRequests = async () => {
@@ -33,9 +36,7 @@ function StaffDashboard() {
   const handleStatusChange = async (id, newStatus) => {
     setUpdating(id)
     try {
-      await api.patch(`/requests/${id}/`, { status: newStatus }, {
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
-      })
+      await api.patch(`/requests/${id}/`, { status: newStatus })
       fetchRequests()
     } catch {
       alert('Failed to update status.')
@@ -45,9 +46,7 @@ function StaffDashboard() {
   }
 
   const handleLogout = async () => {
-    await api.post('/auth/logout/', {}, {
-      headers: { 'X-CSRFToken': getCookie('csrftoken') }
-    })
+    await api.post('/auth/logout/', {})
     navigate('/login')
   }
 

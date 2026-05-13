@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
-import { getCookie } from '../utils/csrf'
+import { getCsrfToken } from '../utils/csrf'
 
 function Login() {
   const [form, setForm] = useState({ username: '', password: '' })
@@ -10,7 +10,7 @@ function Login() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    api.get('/auth/csrf/')
+    api.get('/auth/csrf/').catch(() => {})
   }, [])
 
   const handleSubmit = async (e) => {
@@ -19,9 +19,10 @@ function Login() {
     setLoading(true)
 
     try {
-      const res = await api.post('/auth/login/', form, {
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
-      })
+      if (!getCsrfToken()) {
+        await api.get('/auth/csrf/')
+      }
+      const res = await api.post('/auth/login/', form)
 
       const { role } = res.data
 
